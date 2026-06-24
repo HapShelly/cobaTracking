@@ -172,22 +172,37 @@
         /* ----------------------------------------------------------------
            STAT CARDS — METRIC NUMBERS
            ---------------------------------------------------------------- */
-        html:not(.dark) .text-slate-400,
+        html:not(.dark) .text-slate-400 {
+          color: var(--text-secondary) !important;
+        }
         html:not(.dark) .text-slate-500 {
           color: var(--text-secondary) !important;
         }
         html:not(.dark) .text-slate-600 {
           color: var(--text-secondary) !important;
         }
-        html:not(.dark) .text-xl.font-bold,
+         
+        /* Stat values — bold & clearly readable */
+        html:not(.dark) .text-xl.font-bold {
+          color: var(--text-primary) !important;
+          font-size: 1.35rem !important;
+        }
         html:not(.dark) .text-lg.font-black {
           color: var(--text-primary) !important;
         }
          
-        /* Stat card label icons — bold colors */
+        /* "km" / "mnt" unit suffix inside stat values */
+        html:not(.dark) .text-xl.font-bold .text-xs.font-normal,
+        html:not(.dark) .text-xl.font-bold span.text-xs {
+          color: var(--text-secondary) !important;
+          font-size: .7rem !important;
+        }
+         
+        /* Stat card label icons — readable muted */
         html:not(.dark) p.text-xs.font-medium.text-slate-400.uppercase {
-          color: var(--text-muted) !important;
-          letter-spacing: .06em !important;
+          color: var(--text-secondary) !important;
+          letter-spacing: .07em !important;
+          font-weight: 600 !important;
         }
          
         /* ----------------------------------------------------------------
@@ -339,21 +354,34 @@
         html:not(.dark) .bg-slate-100 {
           background-color: var(--bg-subtle) !important;
           color: var(--text-primary) !important;
-          border: 1px solid var(--border) !important;
+          border: 1px solid var(--border-strong) !important;
         }
         html:not(.dark) .hover\:bg-slate-200:hover {
           background-color: var(--bg-hover) !important;
         }
          
-        /* PDF today */
+        /* PDF today — "Unduh Hari Ini" — dark slate so it's always visible */
         html:not(.dark) button[onclick*="generatePDF('today')"] {
-          background-color: var(--bg-subtle) !important;
-          color: var(--text-secondary) !important;
-          border: 1px solid var(--border) !important;
+          background-color: var(--bg-dark) !important;
+          color: #CBD5E1 !important;
+          border: 1px solid #334155 !important;
+          font-weight: 500 !important;
         }
         html:not(.dark) button[onclick*="generatePDF('today')"]:hover {
-          background-color: var(--bg-hover) !important;
-          border-color: var(--border-lime) !important;
+          background-color: var(--bg-dark-hover) !important;
+          color: var(--lime-mid) !important;
+        }
+         
+        /* Stop/Hentikan button — visible border + red tint, not naked */
+        html:not(.dark) #btn-stop {
+          background-color: #FEF2F2 !important;
+          color: #B91C1C !important;
+          border: 1px solid #FECACA !important;
+          font-weight: 600 !important;
+        }
+        html:not(.dark) #btn-stop:not([disabled]):hover {
+          background-color: #FEE2E2 !important;
+          border-color: #FCA5A5 !important;
         }
          
         /* PDF all — lime primary */
@@ -382,11 +410,12 @@
           box-shadow: 0 6px 20px -4px rgba(132,204,22,.60) !important;
         }
          
-        /* Stop button (disabled) */
+        /* Stop button disabled state — muted over the red base */
         html:not(.dark) #btn-stop[disabled] {
           background-color: var(--bg-subtle) !important;
           color: var(--text-muted) !important;
           border: 1px solid var(--border) !important;
+          cursor: not-allowed !important;
         }
          
         /* Pagination */
@@ -642,12 +671,27 @@
         }
          
         /* ----------------------------------------------------------------
-           SECTION HEADINGS — tracking, log form, etc.
+           SECTION HEADINGS — tracking, log form, timeline, chart titles
            ---------------------------------------------------------------- */
+         
+        /* Small uppercase section labels (LIVE TRACKING GPS, TAMBAH LOG & FOTO) */
         html:not(.dark) h2.text-xs.font-semibold.text-slate-400,
         html:not(.dark) h3.text-xs.font-semibold.text-slate-400 {
           color: var(--lime-hover) !important;
           letter-spacing: .08em !important;
+        }
+         
+        /* Card body headings — "Linimasa Aktivitas", "Statistik Mingguan", "Peta Interaktif" */
+        html:not(.dark) h3.font-bold.text-sm,
+        html:not(.dark) h4.font-bold.text-sm,
+        html:not(.dark) h4.text-sm.font-bold {
+          color: var(--text-primary) !important;
+          font-weight: 700 !important;
+        }
+         
+        /* Catch-all for any heading that Tailwind renders near-invisible */
+        html:not(.dark) .font-bold {
+          color: var(--text-primary) !important;
         }
          
         /* ----------------------------------------------------------------
@@ -660,6 +704,34 @@
         html:not(.dark) textarea:focus-visible {
           outline: 2px solid var(--lime) !important;
           outline-offset: 2px !important;
+        }
+         
+        /* ----------------------------------------------------------------
+           TARGETED TEXT VISIBILITY PATCHES
+           ---------------------------------------------------------------- */
+         
+        /* Stat number unit suffixes inside bold values */
+        html:not(.dark) #dash-distance,
+        html:not(.dark) #dash-trips,
+        html:not(.dark) #dash-duration,
+        html:not(.dark) #dash-logs {
+          color: var(--text-primary) !important;
+          font-weight: 700 !important;
+        }
+         
+        /* "Peta Interaktif Jalur" map card title */
+        html:not(.dark) h4.text-sm.font-bold {
+          color: var(--text-primary) !important;
+        }
+         
+        /* Timeline empty state */
+        html:not(.dark) #timeline-empty p {
+          color: var(--text-secondary) !important;
+        }
+         
+        /* Sync footer text */
+        html:not(.dark) .text-xs.text-slate-400:not(.uppercase) {
+          color: var(--text-secondary) !important;
         }
         
         .dark {
@@ -1725,7 +1797,7 @@
             if (statsChart) {
                 const img = document.createElement('img');
                 img.src = document.getElementById('statsChart').toDataURL('image/png', 1.0);
-                img.className = "max-w-md w-full"; cloneTarget.appendChild(img);
+                img.className = "max-w-md w-full"; cloneTarget.appendChild(img);       
             }
 
             const rows = document.getElementById('pdf-timeline-rows'); rows.innerHTML = '';
