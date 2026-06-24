@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Journey Tracker Pro</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        #map { height: 400px; z-index: 1; }
+        .glass { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .dark .glass { background: rgba(15, 23, 42, 0.8); }
+        .tab-btn.active { border-color: #f97316; color: #f97316; font-weight: 600; }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 min-h-screen transition-colors duration-300 pb-20 md:pb-0">
+
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <div id="modal-backdrop" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div id="confirm-modal" class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-xl p-6 hidden border border-slate-200 dark:border-slate-800">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2" id="modal-title">⚠️ Judul Modal</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2" id="modal-desc">Keterangan deskripsi konfirmasi tindakan berbahaya.</p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-medium rounded-xl transition cursor-pointer">Batal</button>
+                <button id="modal-action-btn" class="px-4 py-2 text-sm bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-xl transition cursor-pointer">Hapus</button>
+            </div>
+        </div>
+
+        <div id="edit-modal" class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-xl p-6 hidden border border-slate-200 dark:border-slate-800">
+            <h3 class="text-lg font-bold mb-4" id="edit-modal-title">✏️ Edit Data</h3>
+            <form id="modal-edit-form" class="space-y-4">
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="edit-type">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Judul / Nama</label>
+                    <input type="text" id="edit-title-field" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent focus:ring-2 focus:ring-orange-500 focus:outline-hidden">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Deskripsi / Keterangan</label>
+                    <textarea id="edit-desc-field" rows="3" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent focus:ring-2 focus:ring-orange-500 focus:outline-hidden"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm bg-slate-100 dark:bg-slate-800 rounded-xl">Batal</button>
+                    <button type="submit" class="px-4 py-2 text-sm bg-orange-600 text-white rounded-xl hover:bg-orange-500">Perbarui</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="preview-modal" class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden p-4 hidden border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-bold text-sm" id="preview-img-title">Preview Foto</h4>
+                <button onclick="closeModal()" class="text-xs font-semibold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">Tutup ✕</button>
+            </div>
+            <img id="preview-img-src" class="w-full max-h-96 object-contain rounded-xl bg-slate-100 dark:bg-slate-950">
+            <p class="text-xs text-slate-500 mt-2" id="preview-img-desc"></p>
+            <div class="mt-4 flex justify-end">
+                <a id="preview-img-download" download="foto_perjalanan.png" class="px-4 py-2 text-xs bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-medium rounded-xl flex items-center gap-1">📥 Unduh Kualitas Asli</a>
+            </div>
+        </div>
+    </div>
+
+    <header class="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 glass no-print">
+        <div class="px-4 mx-auto max-w-7xl h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">🧭</span>
+                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent">JourneyTracker Pro</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <nav class="hidden md:flex gap-1 text-sm font-medium text-slate-500">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active px-3 py-2 border-b-2 border-transparent hover:text-slate-900 dark:hover:text-white transition cursor-pointer">Dashboard</button>
+                    <button onclick="switchTab('history')" id="tab-history" class="tab-btn px-3 py-2 border-b-2 border-transparent hover:text-slate-900 dark:hover:text-white transition cursor-pointer">Riwayat Tabel</button>
+                    <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-3 py-2 border-b-2 border-transparent hover:text-slate-900 dark:hover:text-white transition cursor-pointer">Pengaturan</button>
+                </nav>
+                <div class="bg-slate-100 dark:bg-slate-900 p-1 rounded-xl flex items-center gap-1 border border-slate-200 dark:border-slate-800">
+                    <button onclick="setTheme('light')" id="btn-theme-light" class="p-1.5 rounded-lg text-slate-500 cursor-pointer">☀️</button>
+                    <button onclick="setTheme('dark')" id="btn-theme-dark" class="p-1.5 rounded-lg text-slate-500 cursor-pointer">🌙</button>
+                    <button onclick="setTheme('system')" id="btn-theme-system" class="p-1.5 rounded-lg text-slate-500 cursor-pointer">💻</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-6">
+        
+        <div id="view-dashboard" class="tab-view space-y-6">
+            
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs border border-slate-200 dark:border-slate-800/60 grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
+                <div class="md:col-span-2 relative">
+                    <input type="text" id="search-global" oninput="triggerGlobalFilter()" placeholder="🔍 Cari lokasi, aktivitas, tanggal, rute..." class="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <input type="date" id="filter-date" onchange="triggerGlobalFilter()" class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                </div>
+                <div>
+                    <select id="filter-type" onchange="triggerGlobalFilter()" class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <option value="all">Semua Tipe</option>
+                        <option value="trip">🚶 Perjalanan</option>
+                        <option value="log">📝 Aktivitas & Foto</option>
+                    </select>
+                </div>
+                <div class="flex gap-1 justify-end">
+                    <button onclick="generatePDF('today')" class="text-xs font-semibold py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl flex items-center gap-1 cursor-pointer">📄 PDF Hari Ini</button>
+                    <button onclick="generatePDF('all')" class="text-xs font-semibold py-2 px-3 bg-orange-600 hover:bg-orange-500 text-white rounded-xl flex items-center gap-1 cursor-pointer">📄 PDF Semua</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/60">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">📍 Total Jarak</p>
+                    <p class="text-xl font-bold mt-1" id="dash-distance">0.00 <span class="text-xs font-normal text-slate-400">km</span></p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/60">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">🚶 Total Trip</p>
+                    <p class="text-xl font-bold mt-1" id="dash-trips">0</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/60">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">⏱️ Durasi</p>
+                    <p class="text-xl font-bold mt-1" id="dash-duration">0 <span class="text-xs font-normal text-slate-400">mnt</span></p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/60">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">📝 Aktivitas</p>
+                    <p class="text-xl font-bold mt-1" id="dash-logs">0</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/60">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">🔥 Streak</p>
+                    <p class="text-xl font-bold mt-1" id="dash-streak">0 <span class="text-xs font-normal text-slate-400">hari</span></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800/60">
+                        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">🛰️ Live Tracking GPS</h2>
+                        <div id="tracking-status-container" class="mb-3 hidden p-3 rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900 text-xs text-orange-700 dark:text-orange-300">
+                            <div id="status-text" class="flex items-center gap-2 font-medium">📡 Menghubungkan lokasi...</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="btn-start" onclick="startTracking()" class="w-full py-2.5 px-4 bg-orange-600 hover:bg-orange-500 text-white font-medium text-sm rounded-xl transition flex items-center justify-center gap-1 cursor-pointer">🚀 Start</button>
+                            <button id="btn-stop" onclick="stopTracking()" disabled class="w-full py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 text-sm font-medium rounded-xl flex items-center justify-center gap-1 cursor-not-allowed">🛑 Stop</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800/60">
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1">📝 Tambah Log & Foto</h3>
+                        <form id="form-log" onsubmit="saveActivityLog(event)" class="space-y-3.5">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Pilih Rute Terikat (Opsional)</label>
+                                <select id="log-trip-binding" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Judul Aktivitas</label>
+                                <input type="text" id="log-title" required placeholder="Istirahat makan siang, foto landmark..." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent focus:ring-2 focus:ring-orange-500 focus:outline-hidden">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Deskripsi Catatan</label>
+                                <textarea id="log-desc" rows="2" placeholder="Catat detail menarik atau pengalaman di lokasi..." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent focus:ring-2 focus:ring-orange-500 focus:outline-hidden"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Lokasi (Nama Tempat / Koordinat)</label>
+                                <input type="text" id="log-location" placeholder="Alun-alun kota, Kopi shop X" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent focus:ring-2 focus:ring-orange-500 focus:outline-hidden">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Unggah Foto Momen</label>
+                                <input type="file" id="log-photo" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-600 dark:file:bg-slate-800 dark:file:text-slate-300">
+                            </div>
+                            <button type="submit" class="w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-medium text-xs rounded-xl cursor-pointer">📌 Tambah Aktivitas</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8 space-y-6">
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/60 relative shadow-xs">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                                <h4 class="text-sm font-bold">Peta Interaktif Jalur</h4>
+                            </div>
+                            <div id="replay-controls" class="hidden flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 text-xs">
+                                <button onclick="playReplay()" class="px-2 py-0.5 hover:bg-white dark:hover:bg-slate-700 rounded">▶️</button>
+                                <button onclick="pauseReplay()" class="px-2 py-0.5 hover:bg-white dark:hover:bg-slate-700 rounded">⏸️</button>
+                                <button onclick="stopReplay()" class="px-2 py-0.5 hover:bg-white dark:hover:bg-slate-700 rounded">⏹️</button>
+                            </div>
+                        </div>
+                        <div id="map" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950"></div>
+                        <div class="absolute bottom-6 right-6 z-20 bg-white/90 dark:bg-slate-900/90 p-1 rounded-xl shadow-md text-xs flex gap-1 border border-slate-200 dark:border-slate-800">
+                            <button id="layer-route" onclick="toggleMapLayer('route')" class="px-2.5 py-1 rounded-lg bg-slate-950 text-white dark:bg-white dark:text-slate-950">📍 Lintasan</button>
+                            <button id="layer-heatmap" onclick="toggleMapLayer('heatmap')" class="px-2.5 py-1 rounded-lg text-slate-500">🔥 Heatmap</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800/60">
+                            <h3 class="font-bold text-sm mb-4">⏳ Linimasa Aktivitas & Rute</h3>
+                            <div id="timeline-empty" class="text-center py-10 text-slate-400">
+                                <p class="text-2xl">🧭</p>
+                                <p class="text-xs font-medium mt-1">Belum ada aktivitas terekam hari ini.</p>
+                            </div>
+                            <div id="timeline-container" class="relative border-l-2 border-slate-200 dark:border-slate-800 ml-2.5 space-y-5 hidden"></div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800/60 flex flex-col justify-between">
+                            <div id="pdf-chart-capture-target">
+                                <h3 class="font-bold text-sm mb-4">📈 Statistik Mingguan</h3>
+                                <div class="w-full aspect-square max-h-64 flex items-center justify-center">
+                                    <canvas id="statsChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="border-t border-slate-100 dark:border-slate-800/60 pt-3 mt-4 text-xs text-slate-400 flex justify-between">
+                                <span>Sinkronisasi Terakhir:</span>
+                                <span id="last-update-time" class="font-medium text-slate-600 dark:text-slate-200">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pdf-report-template" class="hidden p-8 bg-white text-slate-900 max-w-4xl mx-auto space-y-6">
+                <div class="flex justify-between items-center border-b-2 border-slate-900 pb-4">
+                    <div>
+                        <h1 class="text-2xl font-bold">🧭 Laporan Perjalanan Komprehensif</h1>
+                        <p class="text-xs text-slate-500 mt-1">Dibuat Otomatis oleh Personal Journey Tracker Pro</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs font-medium text-slate-500">Tanggal Cetak:</p>
+                        <p class="text-sm font-bold id-pdf-date">-</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div><span class="block text-2xs text-slate-400 font-bold uppercase">📍 Total Jarak</span><span class="text-base font-black id-pdf-distance">0 km</span></div>
+                    <div><span class="block text-2xs text-slate-400 font-bold uppercase">🚶 Perjalanan</span><span class="text-base font-black id-pdf-trips">0</span></div>
+                    <div><span class="block text-2xs text-slate-400 font-bold uppercase">⏱️ Total Durasi</span><span class="text-base font-black id-pdf-duration">0 mnt</span></div>
+                    <div><span class="block text-2xs text-slate-400 font-bold uppercase">📷 Log Momen</span><span class="text-base font-black id-pdf-logs">0</span></div>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">📊 Grafik Profil Performansi</h3>
+                    <div id="pdf-chart-clone-destination" class="border border-slate-100 p-2 rounded-lg flex justify-center bg-white"></div>
+                </div>
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">⏳ Catatan Alur Kronologis Linimasa</h3>
+                    <div id="pdf-timeline-rows" class="space-y-2 text-xs"></div>
+                </div>
+                <div class="border-t border-slate-200 pt-4 text-center text-3xs text-slate-400">
+                    Laporan ini dihasilkan di sisi klien secara aman tanpa transmisi jaringan luar. <br> Terima kasih telah menggunakan aplikasi Personal Journey Tracker Pro.
+                </div>
+            </div>
+
+        </div>
+
+        <div id="view-history" class="tab-view space-y-4 hidden">
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800/60">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                    <h3 class="font-bold text-base">🗄️ Riwayat Log Tabel & Kendali Data</h3>
+                    <input type="text" id="table-search" oninput="renderHistoryTable()" placeholder="Filter tabel cepat..." class="px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-hidden">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 bg-slate-50/50 dark:bg-slate-950/20">
+                                <th class="p-3 font-semibold">Tanggal / Jam</th>
+                                <th class="p-3 font-semibold">Tipe Item</th>
+                                <th class="p-3 font-semibold">Judul Aktivitas / Nama Rute</th>
+                                <th class="p-3 font-semibold">Lokasi / Detail Matriks</th>
+                                <th class="p-3 font-semibold text-right">Aksi Manajemen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/40"></tbody>
+                    </table>
+                </div>
+                <div class="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800/40 mt-4 text-xs text-slate-400">
+                    <span id="table-pagination-info">Menampilkan 0 - 0 Data</span>
+                    <div class="flex gap-1">
+                        <button onclick="changePage(-1)" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">Sebelumnya</button>
+                        <button onclick="changePage(1)" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">Selanjutnya</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-settings" class="tab-view space-y-6 hidden">
+            <div class="max-w-xl mx-auto bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800/60 space-y-6">
+                <div>
+                    <h3 class="font-bold text-base">⚙️ Pengukuran Struktur & Manajemen Data Internal</h3>
+                    <p class="text-xs text-slate-400 mt-1">Ukur performa penyimpanan kuota IndexedDB lokal perangkat Anda secara real-time.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div>
+                        <p class="text-3xs font-bold text-slate-400 uppercase">📊 Total Penggunaan Penyimpanan</p>
+                        <p class="text-lg font-black mt-1" id="store-bytes">0 KB</p>
+                    </div>
+                    <div>
+                        <p class="text-3xs font-bold text-slate-400 uppercase">🗄️ Jumlah Rekor Data</p>
+                        <p class="text-lg font-black mt-1" id="store-records">0 Rekor</p>
+                    </div>
+                </div>
+                <div class="space-y-3 pt-2">
+                    <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Backup & Penyelamatan Cadangan Berkas</h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="exportData()" class="py-2 px-3 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700/60 flex items-center justify-center gap-1 cursor-pointer">💾 Cadangkan JSON</button>
+                        <label class="py-2 px-3 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700/60 flex items-center justify-center gap-1 cursor-pointer text-center">
+                            📂 Pulihkan JSON
+                            <input type="file" id="import-file" accept=".json" onchange="importData(event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                    <h4 class="text-xs font-semibold text-rose-500 uppercase tracking-wide">Tindakan Berbahaya / Pembersihan Menyeluruh</h4>
+                    <button onclick="triggerResetAll()" class="w-full py-2.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-medium text-xs rounded-xl border border-rose-200/50 dark:border-rose-900/40 cursor-pointer">🗑️ Reset Semua Data Aplikasi Permanen</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 md:hidden px-4 py-2 flex items-center justify-around no-print">
+        <button onclick="switchTab('dashboard')" class="flex flex-col items-center text-2xs font-medium text-slate-500 hover:text-orange-500"><span class="text-lg">🏠</span>Dashboard</button>
+        <button onclick="switchTab('history')" class="flex flex-col items-center text-2xs font-medium text-slate-500 hover:text-orange-500"><span class="text-lg">🗄️</span>Riwayat</button>
+        <button onclick="switchTab('settings')" class="flex flex-col items-center text-2xs font-medium text-slate-500 hover:text-orange-500"><span class="text-lg">⚙️</span>Pengaturan</button>
+    </div>
+
+    <script>
+        const DB_NAME = 'JourneyTrackerProDB';
+        const DB_VERSION = 1;
+        let db = null;
+        
+        // Active Operations States Tracking Engine
+        let isTracking = false;
+        let watchId = null;
+        let currentTripId = null;
+        let currentPath = [];
+        let map = null;
+        let polyline = null;
+        let liveMarker = null;
+        let heatmapLayer = null;
+        let activeLayer = 'route';
+        
+        // Simulation Replay States
+        let replayMarker = null;
+        let replayInterval = null;
+        let replayIndex = 0;
+        
+        // Charts Objects Cache
+        let statsChart = null;
+
+        // Pagination State Cache
+        let currentPage = 1;
+        const rowsPerPage = 5;
+
+        // Modal Pointer Queue Context
+        let activeModalCallback = null;
+
+        // --- TOAST ALERTS ENGINE ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-3 text-xs font-semibold text-white rounded-xl shadow-lg transition-all transform translate-y-2 opacity-0 duration-300 pointer-events-auto flex items-center justify-between gap-3 ${type === 'danger' ? 'bg-rose-600' : 'bg-slate-900 dark:bg-slate-100 dark:text-slate-950'}`;
+            
+            let icon = type === 'danger' ? '⚠️' : '✅';
+            if (message.includes('diperbarui')) icon = '✏️';
+            if (message.includes('dihapus')) icon = '🗑️';
+            if (message.includes('PDF')) icon = '📄';
+            if (message.includes('Cadangan')) icon = '💾';
+            if (message.includes('dipulihkan')) icon = '📂';
+
+            toast.innerHTML = `<span>${icon} ${message}</span><button onclick="this.parentElement.remove()" class="opacity-50 hover:opacity-100 ml-2">✕</button>`;
+            container.appendChild(toast);
+            
+            // Trigger animation frame push
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // --- TAB PANEL SWITCHER ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(view => view.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            const selectedView = document.getElementById(`view-${tabId}`);
+            if(selectedView) selectedView.classList.remove('hidden');
+            
+            const selectedTabBtn = document.getElementById(`tab-${tabId}`);
+            if(selectedTabBtn) selectedTabBtn.classList.add('active');
+
+            if (tabId === 'dashboard' && map) {
+                setTimeout(() => { map.invalidateSize(); }, 50);
+            }
+            if (tabId === 'settings') { refreshStorageCalculationMetrics(); }
+            if (tabId === 'history') { renderHistoryTable(); }
+        }
+
+        // --- MODERN SYSTEM THEME MANAGEMENT ENGINE ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme_pro') || 'system';
+            setTheme(savedTheme, false);
+        }
+
+        function setTheme(theme, save = true) {
+            const root = document.documentElement;
+            ['light', 'dark', 'system'].forEach(t => {
+                document.getElementById(`btn-theme-${t}`)?.classList.remove('bg-white', 'dark:bg-slate-800', 'text-orange-500', 'shadow-xs');
+            });
+            document.getElementById(`btn-theme-${theme}`)?.classList.add('bg-white', 'dark:bg-slate-800', 'text-orange-500', 'shadow-xs');
+
+            if (theme === 'system') {
+                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                root.classList.toggle('dark', systemDark);
+            } else {
+                root.classList.toggle('dark', theme === 'dark');
+            }
+            if (save) localStorage.setItem('theme_pro', theme);
+            if (map) { map.eachLayer(layer => { if (layer instanceof L.TileLayer) map.removeLayer(layer); }); renderMapTiles(); }
+        }
+
+        function renderMapTiles() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const tileUrl = isDark 
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+            L.tileLayer(tileUrl, { attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }).addTo(map);
+        }
+
+        // --- BASE STORAGE DATABASE INDEXEDDB ---
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = (e) => reject(e.target.error);
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains('trips')) database.createObjectStore('trips', { keyPath: 'id' });
+                    if (!database.objectStoreNames.contains('logs')) database.createObjectStore('logs', { keyPath: 'id' });
+                };
+            });
+        }
+
+        async function getAllItems(storeName) {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(storeName, 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result || []);
+            });
+        }
+
+        async function putItem(storeName, item) {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(storeName, 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.put(item);
+                request.onsuccess = () => resolve(true);
+            });
+        }
+
+        async function deleteItem(storeName, id) {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(storeName, 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve(true);
+            });
+        }
+
+        // --- MATH HAVERSINE DISTANCE COMPUTATION ---
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        }
+
+        // --- CORE LIVE ENGINE GPS ---
+        function startTracking() {
+            if (!navigator.geolocation) { alert("Sinyal Geolocation tidak didukung."); return; }
+            isTracking = true; currentTripId = 'trip_' + Date.now(); currentPath = []; polyline.setLatLngs([]);
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('btn-start').className = "w-full py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 text-xs font-medium rounded-xl flex items-center justify-center cursor-not-allowed";
+            document.getElementById('btn-stop').disabled = false;
+            document.getElementById('btn-stop').className = "w-full py-2.5 px-4 bg-rose-600 text-white font-medium text-xs rounded-xl transition cursor-pointer shadow-md";
+            
+            document.getElementById('tracking-status-container').classList.remove('hidden');
+            document.getElementById('status-text').innerHTML = `<span class="animate-pulse">🛰️</span> Mencari sinyal GPS...`;
+
+            navigator.geolocation.getCurrentPosition(handleGPSUpdate, handleGPSError, { enableHighAccuracy: true });
+            watchId = navigator.geolocation.watchPosition(handleGPSUpdate, handleGPSError, { enableHighAccuracy: true, maximumAge: 20000 });
+        }
+
+        function handleGPSUpdate(position) {
+            const lat = position.coords.latitude; const lng = position.coords.longitude; const timestamp = position.timestamp || Date.now();
+            document.getElementById('status-text').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> GPS Terhubung: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            
+            if (currentPath.length > 0) {
+                const last = currentPath[currentPath.length - 1];
+                if (last[0] === lat && last[1] === lng) return;
+            }
+            currentPath.push([lat, lng, timestamp]);
+            polyline.setLatLngs(currentPath.map(p => [p[0], p[1]]));
+            if (!liveMarker) { liveMarker = L.marker([lat, lng]).addTo(map); } else { liveMarker.setLatLng([lat, lng]); }
+            map.panTo([lat, lng]);
+        }
+
+        function handleGPSError() {
+            document.getElementById('status-text').innerHTML = `⚠️ Gangguan sinyal GPS / Izin Ditolak.`;
+        }
+
+        async function stopTracking() {
+            if (!isTracking) return;
+            isTracking = false; if (watchId) navigator.geolocation.clearWatch(watchId);
+            document.getElementById('tracking-status-container').classList.add('hidden');
+            
+            document.getElementById('btn-start').disabled = false;
+            document.getElementById('btn-start').className = "w-full py-2.5 px-4 bg-orange-600 text-white font-medium text-xs rounded-xl transition cursor-pointer shadow-md";
+            document.getElementById('btn-stop').disabled = true;
+            document.getElementById('btn-stop').className = "w-full py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-400 text-xs rounded-xl cursor-not-allowed";
+
+            if (currentPath.length < 2) { showToast("Rute lintasan terlalu pendek.", "danger"); return; }
+            
+            let totalDist = 0;
+            for (let i = 0; i < currentPath.length - 1; i++) {
+                totalDist += calculateDistance(currentPath[i][0], currentPath[i][1], currentPath[i+1][0], currentPath[i+1][1]);
+            }
+            const durationMs = currentPath[currentPath.length - 1][2] - currentPath[0][2];
+            const newTrip = {
+                id: currentTripId,
+                title: `Perjalanan Jelajah #${Date.now().toString().slice(-4)}`,
+                date: new Date().toISOString().split('T')[0],
+                timestamp: currentPath[0][2],
+                path: currentPath,
+                distance: totalDist,
+                duration: durationMs
+            };
+            await putItem('trips', newTrip);
+            if (liveMarker) { map.removeLayer(liveMarker); liveMarker = null; }
+            showToast("Rute perjalanan berhasil disimpan!");
+            await syncDashboardCoreData();
+        }
+
+        // --- DASHBOARD DATA COHESION INTEGRATOR ---
+        async function syncDashboardCoreData() {
+            const trips = await getAllItems('trips');
+            const logs = await getAllItems('logs');
+
+            // Set Dropdown Select Option Trip Binders
+            const selectBinding = document.getElementById('log-trip-binding');
+            selectBinding.innerHTML = '<option value="">-- Berdiri Sendiri (Tidak Terikat) --</option>';
+            trips.forEach(t => {
+                selectBinding.innerHTML += `<option value="${t.id}">${t.title} (${t.date})</option>`;
+            });
+
+            // Calculate Metrics Statistics
+            let totalDistance = 0; let totalDurationMs = 0;
+            const uniqueDates = new Set();
+            trips.forEach(t => { totalDistance += t.distance || 0; totalDurationMs += t.duration || 0; if(t.date) uniqueDates.add(t.date); });
+            logs.forEach(l => { if(l.timestamp) uniqueDates.add(new Date(l.timestamp).toISOString().split('T')[0]); });
+
+            document.getElementById('dash-distance').innerHTML = `${totalDistance.toFixed(2)} <span class="text-xs font-normal text-slate-400">km</span>`;
+            document.getElementById('dash-trips').innerText = trips.length;
+            document.getElementById('dash-duration').innerHTML = `${Math.round(totalDurationMs / 60000)} <span class="text-xs font-normal text-slate-400">mnt</span>`;
+            document.getElementById('dash-logs').innerText = logs.length;
+            document.getElementById('dash-streak').innerHTML = `${uniqueDates.size} <span class="text-xs font-normal text-slate-400">hari</span>`;
+            document.getElementById('last-update-time').innerText = new Date().toLocaleTimeString('id-ID');
+
+            triggerGlobalFilter();
+        }
+
+        // --- GLOBAL FILTER ENGINE (REAL-TIME MULTI-AXIS) ---
+        async function triggerGlobalFilter() {
+            const query = document.getElementById('search-global').value.toLowerCase().trim();
+            const dateVal = document.getElementById('filter-date').value;
+            const typeVal = document.getElementById('filter-type').value;
+
+            const trips = await getAllItems('trips');
+            const logs = await getAllItems('logs');
+
+            let filteredTrips = trips.filter(t => {
+                if (typeVal === 'log') return false;
+                if (dateVal && t.date !== dateVal) return false;
+                if (query) {
+                    const matchTitle = t.title.toLowerCase().includes(query);
+                    const matchDate = t.date.includes(query);
+                    return matchTitle || matchDate;
+                }
+                return true;
+            });
+
+            let filteredLogs = logs.filter(l => {
+                if (typeVal === 'trip') return false;
+                const lDate = new Date(l.timestamp).toISOString().split('T')[0];
+                if (dateVal && lDate !== dateVal) return false;
+                if (query) {
+                    const matchTitle = l.title.toLowerCase().includes(query);
+                    const matchDesc = (l.desc || '').toLowerCase().includes(query);
+                    const matchLoc = (l.location || '').toLowerCase().includes(query);
+                    return matchTitle || matchDesc || matchLoc;
+                }
+                return true;
+            });
+
+            renderDashboardTimeline(filteredTrips, filteredLogs);
+            renderWeeklyStatisticsCharts(filteredTrips);
+            renderMapHeatlayers(filteredTrips);
+        }
+
+        // --- RENDER TIMELINE ELEMENT ---
+        function renderDashboardTimeline(trips, logs) {
+            const container = document.getElementById('timeline-container');
+            const emptyState = document.getElementById('timeline-empty');
+            
+            let stream = [];
+            trips.forEach(t => stream.push({ type: 'trip', time: t.timestamp, data: t }));
+            logs.forEach(l => stream.push({ type: 'log', time: l.timestamp, data: l }));
+            stream.sort((a,b) => b.time - a.time);
+
+            if (stream.length === 0) { container.classList.add('hidden'); emptyState.classList.remove('hidden'); return; }
+            container.classList.remove('hidden'); emptyState.classList.add('hidden');
+            container.innerHTML = '';
+
+            stream.forEach(item => {
+                const node = document.createElement('div');
+                node.className = "relative pl-6 group";
+                const stampStr = new Date(item.time).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+
+                if (item.type === 'trip') {
+                    node.innerHTML = `
+                        <div class="absolute -left-[5px] top-1.5 bg-orange-500 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-slate-950"></div>
+                        <div class="bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50 hover:border-orange-500/40 transition">
+                            <div class="flex justify-between items-start">
+                                <span class="text-3xs font-medium text-slate-400">${stampStr}</span>
+                                <div class="flex gap-2 opacity-60 group-hover:opacity-100 transition text-3xs">
+                                    <button onclick="focusOnSelectedTrip('${item.data.id}')" class="text-orange-500 font-bold">👁️ Lihat</button>
+                                    <button onclick="openEditModal('${item.data.id}', 'trip')" class="text-blue-500 font-bold">✏️ Ubah Nama</button>
+                                    <button onclick="triggerDeleteConfirm('${item.data.id}', 'trip')" class="text-rose-500 font-bold">🗑️ Hapus</button>
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-xs text-slate-800 dark:text-slate-100 mt-0.5">🚶 ${item.data.title}</h4>
+                            <p class="text-3xs text-slate-500 mt-1">Metrik: <b>${item.data.distance.toFixed(2)} km</b> | Durasi: ${Math.round(item.data.duration / 60000)} Menit</p>
+                            <button onclick="generateSingleTripPDF('${item.data.id}')" class="mt-2 text-2xs px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md font-semibold block">📄 Export PDF Rute Ini</button>
+                        </div>`;
+                } else {
+                    node.innerHTML = `
+                        <div class="absolute -left-[5px] top-1.5 bg-indigo-500 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-slate-950"></div>
+                        <div class="bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50 hover:border-indigo-500/40 transition">
+                            <div class="flex justify-between items-start">
+                                <span class="text-3xs font-medium text-slate-400">${stampStr} ${item.data.location ? `• 📍 ${item.data.location}` : ''}</span>
+                                <div class="flex gap-2 opacity-60 group-hover:opacity-100 transition text-3xs">
+                                    <button onclick="openEditModal('${item.data.id}', 'log')" class="text-blue-500 font-bold">✏️ Edit</button>
+                                    <button onclick="triggerDeleteConfirm('${item.data.id}', 'log')" class="text-rose-500 font-bold">🗑️ Hapus</button>
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-xs text-slate-800 dark:text-slate-100 mt-0.5">📌 ${item.data.title}</h4>
+                            ${item.data.desc ? `<p class="text-3xs text-slate-600 dark:text-slate-400 mt-1">${item.data.desc}</p>` : ''}
+                            ${item.data.photo ? `
+                                <div class="mt-2 relative group/img max-w-xs">
+                                    <img src="${item.data.photo}" onclick="openImagePreview('${item.data.id}')" class="rounded-lg max-h-24 object-cover w-full cursor-zoom-in border border-slate-200 dark:border-slate-800" />
+                                    <div class="absolute bottom-1 right-1 opacity-0 group-hover/img:opacity-100 transition bg-slate-950/70 p-1 rounded-md text-3xs text-white">Klik Preview / Download</div>
+                                </div>` : ''}
+                        </div>`;
+                }
+                container.appendChild(node);
+            });
+        }
+
+        // --- MAP ACTIVE LAYERS MANIPULATION ---
+        function renderMapHeatlayers(trips) {
+            if (heatmapLayer) { map.removeLayer(heatmapLayer); heatmapLayer = null; }
+            let points = [];
+            trips.forEach(t => { if(t.path) t.path.forEach(pt => points.push([pt[0], pt[1], 0.6])); });
+            heatmapLayer = L.heatLayer(points, { radius: 20, blur: 12, maxZoom: 16 });
+            if (activeLayer === 'heatmap') heatmapLayer.addTo(map);
+        }
+
+        function toggleMapLayer(type) {
+            activeLayer = type;
+            const btnRoute = document.getElementById('layer-route');
+            const btnHeat = document.getElementById('layer-heatmap');
+            
+            btnRoute.className = type === 'route' ? "px-2.5 py-1 rounded-lg bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "px-2.5 py-1 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800";
+            btnHeat.className = type === 'heatmap' ? "px-2.5 py-1 rounded-lg bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "px-2.5 py-1 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800";
+            
+            if (type === 'route') { if(heatmapLayer) map.removeLayer(heatmapLayer); triggerGlobalFilter(); } 
+            else { if(polyline) polyline.setLatLngs([]); if(heatmapLayer) heatmapLayer.addTo(map); }
+        }
+
+        async function focusOnSelectedTrip(id) {
+            const trips = await getAllItems('trips');
+            const t = trips.find(item => item.id === id);
+            if(!t || !t.path || t.path.length === 0) return;
+
+            toggleMapLayer('route');
+            const coords = t.path.map(p => [p[0], p[1]]);
+            polyline.setLatLngs(coords);
+
+            // Wipe temporary trip markers safely
+            map.eachLayer(l => { if (l instanceof L.Marker && l !== liveMarker && l !== replayMarker) map.removeLayer(l); });
+
+            L.marker(coords[0]).addTo(map).bindPopup(`🏁 Mulai: ${t.title}`).openPopup();
+            L.marker(coords[coords.length - 1]).addTo(map).bindPopup(`🏁 Selesai`);
+            map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+
+            // Initialize configuration properties for playback engine simulation
+            currentPath = t.path; replayIndex = 0;
+            document.getElementById('replay-controls').classList.remove('hidden');
+            document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- ANIMATION TRACK REPLAY CONTROLLER ---
+        function playReplay() {
+            if(currentPath.length === 0) return;
+            if(replayInterval) clearInterval(replayInterval);
+            if(!replayMarker) replayMarker = L.marker([currentPath[0][0], currentPath[0][1]], { icon: L.divIcon({ html: '🏃‍♂️', className: 'text-xl', iconAnchor:[10,10] }) }).addTo(map);
+            
+            replayInterval = setInterval(() => {
+                if(replayIndex >= currentPath.length) { clearInterval(replayInterval); showToast("Replay lintasan selesai."); return; }
+                const pt = currentPath[replayIndex];
+                replayMarker.setLatLng([pt[0], pt[1]]);
+                map.panTo([pt[0], pt[1]]);
+                replayIndex++;
+            }, 250);
+        }
+        function pauseReplay() { if(replayInterval) clearInterval(replayInterval); }
+        function stopReplay() { pauseReplay(); if(replayMarker){ map.removeLayer(replayMarker); replayMarker = null; } replayIndex = 0; }
+
+        // --- SUBMIT ACTION NEW MOMENTS ACTIVITY LOG ---
+        function saveActivityLog(e) {
+            e.preventDefault();
+            const title = document.getElementById('log-title').value;
+            const desc = document.getElementById('log-desc').value;
+            const locationVal = document.getElementById('log-location').value;
+            const bindingId = document.getElementById('log-trip-binding').value;
+            const photoFile = document.getElementById('log-photo').files[0];
+
+            const commit = (base64Data = null) => {
+                const log = {
+                    id: 'log_' + Date.now(),
+                    tripId: bindingId || null,
+                    title, desc, location: locationVal,
+                    timestamp: Date.now(),
+                    photo: base64Data
+                };
+                putItem('logs', log).then(() => {
+                    document.getElementById('form-log').reset();
+                    showToast("Aktivitas berhasil disimpan");
+                    syncDashboardCoreData();
+                });
+            };
+
+            if (photoFile) {
+                const r = new FileReader(); r.onloadend = () => commit(r.result); r.readAsDataURL(photoFile);
+            } else { commit(); }
+        }
+
+        // --- MODAL DIALOG CONTROLLER & CRUD CORE PIPELINES ---
+        function openEditModal(id, type) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-type').value = type;
+            
+            if (type === 'trip') {
+                document.getElementById('edit-modal-title').innerText = "✏️ Ubah Nama Perjalanan";
+                getAllItems('trips').then(list => {
+                    const match = list.find(t => t.id === id);
+                    if(match) {
+                        document.getElementById('edit-title-field').value = match.title;
+                        document.getElementById('edit-desc-field').parentElement.classList.add('hidden');
+                        openBackdrop('edit');
+                    }
+                });
+            } else {
+                document.getElementById('edit-modal-title').innerText = "✏️ Perbarui Data Aktivitas";
+                document.getElementById('edit-desc-field').parentElement.classList.remove('hidden');
+                getAllItems('logs').then(list => {
+                    const match = list.find(l => l.id === id);
+                    if(match) {
+                        document.getElementById('edit-title-field').value = match.title;
+                        document.getElementById('edit-desc-field').value = match.desc || '';
+                        openBackdrop('edit');
+                    }
+                });
+            }
+        }
+
+        document.getElementById('modal-edit-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const type = document.getElementById('edit-type').value;
+            const title = document.getElementById('edit-title-field').value;
+
+            if (type === 'trip') {
+                const trips = await getAllItems('trips');
+                const t = trips.find(x => x.id === id);
+                if(t) { t.title = title; await putItem('trips', t); }
+            } else {
+                const logs = await getAllItems('logs');
+                const l = logs.find(x => x.id === id);
+                if(l) { l.title = title; l.desc = document.getElementById('edit-desc-field').value; await putItem('logs', l); }
+            }
+            closeModal();
+            showToast("Data berhasil diperbarui");
+            syncDashboardCoreData();
+        };
+
+        function triggerDeleteConfirm(id, type) {
+            document.getElementById('modal-title').innerText = type === 'trip' ? "⚠️ Hapus Perjalanan?" : "⚠️ Hapus Aktivitas?";
+            document.getElementById('modal-desc').innerText = "Data yang dihapus tidak dapat dikembalikan atau dipulihkan kembali.";
+            
+            activeModalCallback = async () => {
+                if(type === 'trip') { await deleteItem('trips', id); } else { await deleteItem('logs', id); }
+                closeModal();
+                showToast("Data berhasil dihapus");
+                syncDashboardCoreData();
+            };
+            openBackdrop('confirm');
+        }
+
+        function triggerResetAll() {
+            document.getElementById('modal-title').innerText = "⚠️ Reset Semua Data?";
+            document.getElementById('modal-desc').innerText = "Semua perjalanan, aktivitas, foto, dan statistik akan dihapus permanen dari browser ini.";
+            activeModalCallback = async () => {
+                indexedDB.deleteDatabase(DB_NAME);
+                localStorage.removeItem('theme_pro');
+                window.location.reload();
+            };
+            openBackdrop('confirm');
+        }
+
+        function openImagePreview(logId) {
+            getAllItems('logs').then(list => {
+                const match = list.find(l => l.id === logId);
+                if(match && match.photo) {
+                    document.getElementById('preview-img-title').innerText = match.title;
+                    document.getElementById('preview-img-desc').innerText = match.desc || 'Tidak ada keterangan.';
+                    const imgNode = document.getElementById('preview-img-src');
+                    imgNode.src = match.photo;
+                    const dwn = document.getElementById('preview-img-download');
+                    dwn.href = match.photo;
+                    dwn.download = `${match.title.replace(/\s+/g, '_')}.png`;
+                    openBackdrop('preview');
+                }
+            });
+        }
+
+        function openBackdrop(subModal) {
+            document.getElementById('modal-backdrop').classList.remove('hidden');
+            document.getElementById('modal-backdrop').classList.add('flex');
+            document.getElementById('confirm-modal').classList.add('hidden');
+            document.getElementById('edit-modal').classList.add('hidden');
+            document.getElementById('preview-modal').classList.add('hidden');
+            document.getElementById(`${subModal}-modal`).classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-backdrop').classList.add('hidden');
+            document.getElementById('modal-backdrop').classList.remove('flex');
+        }
+
+        document.getElementById('modal-action-btn').onclick = () => { if(activeModalCallback) activeModalCallback(); };
+
+        // --- WEEKLY CHART ANALYTICS INTERFACES ---
+        function renderWeeklyStatisticsCharts(trips) {
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            const last7Days = Array.from({length: 7}, (_, i) => {
+                const d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().split('T')[0];
+            }).reverse();
+
+            const distanceMapByDay = last7Days.map(day => trips.filter(t => t.date === day).reduce((s, c) => s + (c.distance || 0), 0));
+            const isDark = document.documentElement.classList.contains('dark');
+
+            if (statsChart) statsChart.destroy();
+            statsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: last7Days.map(day => day.substring(5)),
+                    datasets: [{ label: 'Jarak (km)', data: distanceMapByDay, backgroundColor: '#f97316', borderRadius: 5 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: isDark ? '#1e293b' : '#f1f5f9' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: isDark ? '#1e293b' : '#f1f5f9' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // --- TABEL HISTORI & PAGINATION ENGINE ---
+        async function renderHistoryTable() {
+            const tableBody = document.getElementById('history-table-body');
+            const searchVal = document.getElementById('table-search').value.toLowerCase().trim();
+            
+            const trips = await getAllItems('trips');
+            const logs = await getAllItems('logs');
+            
+            let combinedRows = [];
+            trips.forEach(t => combinedRows.push({ id: t.id, type: 'trip', title: t.title, time: t.timestamp, detail: `${t.distance.toFixed(2)} km`, rawDate: t.date }));
+            logs.forEach(l => combinedRows.push({ id: l.id, type: 'log', title: l.title, time: l.timestamp, detail: l.location || 'Catatan Bebas', rawDate: new Date(l.timestamp).toISOString().split('T')[0] }));
+            
+            combinedRows.sort((a,b) => b.time - a.time);
+
+            if (searchVal) {
+                combinedRows = combinedRows.filter(r => r.title.toLowerCase().includes(searchVal) || r.detail.toLowerCase().includes(searchVal));
+            }
+
+            // Calculation Pagination indexes boundaries
+            const totalItems = combinedRows.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+            if(currentPage > totalPages) currentPage = totalPages;
+            if(currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            
+            document.getElementById('table-pagination-info').innerText = totalItems > 0 ? `Menampilkan ${startIndex + 1} - ${endIndex} dari ${totalItems} Baris` : 'Tidak ada data tabel.';
+
+            tableBody.innerHTML = '';
+            const pageSlice = combinedRows.slice(startIndex, endIndex);
+
+            pageSlice.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 dark:hover:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/50";
+                
+                const timeString = new Date(row.time).toLocaleString('id-ID', {dateStyle:'short', timeStyle:'short'});
+                const badgeStyle = row.type === 'trip' ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300';
+                
+                tr.innerHTML = `
+                    <td class="p-3 font-medium">${timeString}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 text-3xs font-bold rounded-md ${badgeStyle}">${row.type.toUpperCase()}</span></td>
+                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${row.title}</td>
+                    <td class="p-3 text-slate-500">${row.detail}</td>
+                    <td class="p-3 text-right space-x-1.5">
+                        ${row.type === 'trip' ? `<button onclick="switchTab('dashboard'); focusOnSelectedTrip('${row.id}')" class="text-orange-500 font-bold">👁️ Detail</button>` : `<button onclick="switchTab('dashboard'); openImagePreview('${row.id}')" class="text-indigo-500 font-bold">👁️ Foto</button>`}
+                        <button onclick="openEditModal('${row.id}', '${row.type}')" class="text-blue-500">✏️</button>
+                        <button onclick="triggerDeleteConfirm('${row.id}', '${row.type}')" class="text-rose-500">🗑️</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderHistoryTable();
+        }
+
+        // --- MANAGEMENT SETTINGS & STORAGE COUNTER ---
+        async function refreshStorageCalculationMetrics() {
+            const trips = await getAllItems('trips');
+            const logs = await getAllItems('logs');
+            const stringifiedData = JSON.stringify({ trips, logs });
+            
+            // Estimation length size computation bytes parameters
+            const bytesLength = new Blob([stringifiedData]).size;
+            document.getElementById('store-bytes').innerText = `${(bytesLength / 1024).toFixed(2)} KB`;
+            document.getElementById('store-records').innerText = `${trips.length + logs.length} Rekor`;
+        }
+
+        // --- EXPORT COMPREHENSIVE CLIENT-SIDE PDF GENERATOR ---
+        async function generateSingleTripPDF(tripId) {
+            const trips = await getAllItems('trips');
+            const targetTrip = trips.find(t => t.id === tripId);
+            if(!targetTrip) return;
+            generatePDF('all', targetTrip);
+        }
+
+        async function generatePDF(mode = 'all', singleFilterTrip = null) {
+            showToast("Sedang menyiapkan dokumen PDF...");
+            const trips = await getAllItems('trips');
+            const logs = await getAllItems('logs');
+
+            const container = document.getElementById('pdf-report-template');
+            container.classList.remove('hidden'); // Reveal temporarily for extraction snapshot calculation
+
+            // Processing variable scoping arrays
+            let targetTrips = singleFilterTrip ? [singleFilterTrip] : trips;
+            let targetLogs = logs;
+
+            if (mode === 'today' && !singleFilterTrip) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                targetTrips = trips.filter(t => t.date === todayStr);
+                targetLogs = logs.filter(l => new Date(l.timestamp).toISOString().split('T')[0] === todayStr);
+            }
+
+            // Map data items strings injection
+            let pdfDistance = 0; let pdfDuration = 0;
+            targetTrips.forEach(t => { pdfDistance += t.distance || 0; pdfDuration += t.duration || 0; });
+
+            document.querySelector('.id-pdf-date').innerText = new Date().toLocaleDateString('id-ID', { dateStyle: 'long'});
+            document.querySelector('.id-pdf-distance').innerText = `${pdfDistance.toFixed(2)} km`;
+            document.querySelector('.id-pdf-trips').innerText = targetTrips.length;
+            document.querySelector('.id-pdf-duration').innerText = `${Math.round(pdfDuration / 60000)} mnt`;
+            document.querySelector('.id-pdf-logs').innerText = targetLogs.length;
+
+            // Snapshot existing active graphics onto canvas structure
+            const cloneDestination = document.getElementById('pdf-chart-clone-destination');
+            cloneDestination.innerHTML = '';
+            const activeCanvas = document.getElementById('statsChart');
+            if (activeCanvas) {
+                const img = document.createElement('img');
+                img.src = activeCanvas.toDataURL('image/png');
+                img.className = "max-w-md w-full h-auto";
+                cloneDestination.appendChild(img);
+            }
+
+            // Map layout rows
+            const rowsContainer = document.getElementById('pdf-timeline-rows');
+            rowsContainer.innerHTML = '';
+
+            let combined = [];
+            targetTrips.forEach(t => combined.push({ type: 'trip', time: t.timestamp, label: `🚶 ${t.title} (${t.distance.toFixed(2)} km - ${Math.round(t.duration/60000)} mnt)` }));
+            targetLogs.forEach(l => combined.push({ type: 'log', time: l.timestamp, label: `📌 ${l.title} ${l.location ? `[📍 ${l.location}]` : ''} - ${l.desc || ''}`, photo: l.photo }));
+            combined.sort((a,b) => b.time - a.time);
+
+            combined.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "p-3 border-b border-slate-100 flex flex-col gap-2";
+                div.innerHTML = `
+                    <div class="flex justify-between font-medium">
+                        <span>${item.label}</span>
+                        <span class="text-slate-400 text-3xs">${new Date(item.time).toLocaleTimeString('id-ID')}</span>
+                    </div>
+                    ${item.photo ? `<img src="${item.photo}" class="max-h-20 object-cover w-32 rounded border border-slate-200">` : ''}
+                `;
+                rowsContainer.appendChild(div);
+            });
+
+            // Trigger window html2canvas engine compilation
+            setTimeout(async () => {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                await html2canvas(container, { scale: 2, useCORS: true }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = 210; // A4 standard width dimension mm
+                    const pageHeight = 295; 
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    let heightLeft = imgHeight;
+                    let position = 0;
+
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+
+                    while (heightLeft >= 0) {
+                        position = heightLeft - imgHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+                    }
+                    pdf.save(`Laporan_Journey_Tracker_${Date.now()}.pdf`);
+                    container.classList.add('hidden'); // Re-hide structure elements template
+                    showToast("PDF berhasil dibuat");
+                });
+            }, 500);
+        }
+
+        // --- FILE RECOVERY PAYLOAD CONFIGURATIONS ---
+        async function exportData() {
+            const trips = await getAllItems('trips');
+            const logs = await getAllItems('logs');
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ trips, logs }));
+            const dLink = document.createElement('a'); dLink.setAttribute("href", dataStr); dLink.setAttribute("download", `backup_tracker_pro_${Date.now()}.json`);
+            document.body.appendChild(dLink); dLink.click(); dLink.remove();
+            showToast("Backup berhasil dibuat");
+        }
+
+        function importData(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const payload = JSON.parse(evt.target.result);
+                    if (payload.trips) for (let t of payload.trips) await putItem('trips', t);
+                    if (payload.logs) for (let l of payload.logs) await putItem('logs', l);
+                    showToast("Data berhasil dipulihkan");
+                    syncDashboardCoreData();
+                } catch { alert("Gagal memproses validasi struktur JSON."); }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- WINDOW BOOTSTRAP INITIALIZER ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            map = L.map('map', { zoomControl: false }).setView([-6.2000, 106.8166], 13);
+            renderMapTiles();
+            L.control.zoom({ position: 'topright' }).addTo(map);
+            polyline = L.polyline([], { color: '#f97316', weight: 4, opacity: 0.85 }).addTo(map);
+
+            await initDB();
+            await syncDashboardCoreData();
+        });
+    </script>
+</body>
+</html>
