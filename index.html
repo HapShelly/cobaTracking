@@ -27,30 +27,593 @@
     <style>
         :root {
             /* Light Mode Premium Palette */
-            /* Background & Surface */
-          --bg-main: #F8FAFC;
-          --bg-card: #FFFFFF;
-          --bg-surface: rgba(255, 255, 255, 0.8);
-          
-          /* Text */
-          --text-primary: #0F172A;
-          --text-secondary: #64748B;
-          --text-muted: #94A3B8;
-          
-          /* Borders & Shadows */
-          --border: #E2E8F0;
-          --border-input: #CBD5E1;
-          --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-          
-          /* Primary & Accents */
-          --primary: #2563EB;
-          --primary-hover: #1D4ED8;
-          
-          /* Status */
-          --success: #10B981;
-          --warning: #F59E0B;
-          --danger: #EF4444;
-        }
+            --bg-main:        #F8FAFC;
+            --bg-card:        #FFFFFF;
+            --bg-subtle:      #F1F5F9;
+            --bg-hover:       #E2E8F0;
+            
+            --text-primary:   #0F172A;
+              --text-secondary: #64748B;
+              --text-muted:     #94A3B8;
+             
+              --border:         #E2E8F0;
+              --border-strong:  #CBD5E1;
+             
+              --primary:        #2563EB;
+              --primary-hover:  #1D4ED8;
+              --primary-light:  #DBEAFE;
+             
+              --success:        #10B981;
+              --warning:        #F59E0B;
+              --danger:         #EF4444;
+             
+              --shadow-sm:  0 1px 2px 0 rgb(0 0 0 / .05);
+              --shadow-md:  0 4px 6px -1px rgb(0 0 0 / .07), 0 2px 4px -2px rgb(0 0 0 / .05);
+              --radius:     1rem; /* 16px = rounded-2xl */
+            }
+             
+            /* -----------------------------------------------------------
+               BASE — PAGE BACKGROUND & BODY TEXT
+               ----------------------------------------------------------- */
+            html:not(.dark) body {
+              background-color: var(--bg-main) !important;
+              color: var(--text-primary) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               NAVBAR / HEADER — GLASSMORPHISM LIGHT
+               ----------------------------------------------------------- */
+            html:not(.dark) header {
+              background: rgba(255, 255, 255, 0.85) !important;
+              backdrop-filter: blur(12px) !important;
+              -webkit-backdrop-filter: blur(12px) !important;
+              border-bottom-color: var(--border) !important;
+            }
+             
+            /* Theme toggle pill */
+            html:not(.dark) header .bg-slate-100 {
+              background-color: var(--bg-subtle) !important;
+              border-color: var(--border) !important;
+            }
+             
+            /* Active theme button highlight */
+            html:not(.dark) header .bg-white {
+              background-color: #FFFFFF !important;
+              box-shadow: var(--shadow-sm) !important;
+            }
+             
+            /* Nav tab buttons */
+            html:not(.dark) nav .tab-btn {
+              color: var(--text-secondary) !important;
+            }
+            html:not(.dark) nav .tab-btn:hover {
+              color: var(--text-primary) !important;
+            }
+            html:not(.dark) nav .tab-btn.active {
+              color: #EA580C !important;           /* orange-600 — brand accent */
+              border-bottom-color: #EA580C !important;
+            }
+             
+            /* -----------------------------------------------------------
+               CARDS — WHITE, SOFT BORDER, LIGHT SHADOW
+               ----------------------------------------------------------- */
+            html:not(.dark) .bg-white,
+            html:not(.dark) .dark\:bg-slate-900 {
+              background-color: var(--bg-card) !important;
+              border-color: var(--border) !important;
+            }
+             
+            /* Subtle inner backgrounds (settings metric grid, etc.) */
+            html:not(.dark) .bg-slate-50,
+            html:not(.dark) .dark\:bg-slate-950 {
+              background-color: var(--bg-subtle) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               STAT CARDS — LABELS & VALUES
+               ----------------------------------------------------------- */
+            html:not(.dark) .text-slate-400 {
+              color: var(--text-secondary) !important;
+            }
+            html:not(.dark) .text-slate-500 {
+              color: var(--text-secondary) !important;
+            }
+            html:not(.dark) .text-slate-600 {
+              color: var(--text-secondary) !important;
+            }
+             
+            /* Stat value numbers */
+            html:not(.dark) .text-xl.font-bold,
+            html:not(.dark) .text-lg.font-black {
+              color: var(--text-primary) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               STREAK CARD — SOFT GRADIENT HIGHLIGHT
+               ----------------------------------------------------------- */
+            html:not(.dark) div:has(> #dash-streak) {
+              background: linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 100%) !important;
+              border-color: #BFDBFE !important;
+            }
+            html:not(.dark) div:has(> #dash-streak) .text-slate-400 {
+              color: #1E40AF !important;
+            }
+            html:not(.dark) div:has(> #dash-streak) .text-xl.font-bold {
+              color: var(--primary) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               SEARCH BAR & FILTER BAR
+               ----------------------------------------------------------- */
+             
+            /* Global search input */
+            html:not(.dark) #search-global {
+              background-color: #FFFFFF !important;
+              border-color: var(--border) !important;
+              color: var(--text-primary) !important;
+            }
+            html:not(.dark) #search-global::placeholder {
+              color: var(--text-muted) !important;
+            }
+            html:not(.dark) #search-global:hover {
+              border-color: var(--primary) !important;
+            }
+            html:not(.dark) #search-global:focus {
+              border-color: var(--primary) !important;
+              box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+            }
+             
+            /* Date filter input */
+            html:not(.dark) #filter-date {
+              background-color: #FFFFFF !important;
+              border-color: var(--border-strong) !important;
+              color: var(--text-primary) !important;
+            }
+            html:not(.dark) #filter-date:hover {
+              border-color: var(--primary) !important;
+            }
+            html:not(.dark) #filter-date:focus {
+              border-color: var(--primary) !important;
+              box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+              outline: none !important;
+            }
+             
+            /* Type select / dropdown */
+            html:not(.dark) #filter-type {
+              background-color: #FFFFFF !important;
+              border-color: var(--border-strong) !important;
+              color: var(--text-primary) !important;
+              appearance: auto !important;
+            }
+            html:not(.dark) #filter-type:hover {
+              border-color: var(--primary) !important;
+            }
+            html:not(.dark) #filter-type:focus {
+              border-color: var(--primary) !important;
+              box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+              outline: none !important;
+            }
+             
+            /* Table quick-search input */
+            html:not(.dark) #table-search {
+              background-color: #FFFFFF !important;
+              border-color: var(--border) !important;
+              color: var(--text-primary) !important;
+            }
+            html:not(.dark) #table-search::placeholder {
+              color: var(--text-muted) !important;
+            }
+            html:not(.dark) #table-search:hover {
+              border-color: var(--primary) !important;
+            }
+            html:not(.dark) #table-search:focus {
+              border-color: var(--primary) !important;
+              box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+              outline: none !important;
+            }
+             
+            /* -----------------------------------------------------------
+               FORM — ALL INPUTS, TEXTAREAS, SELECTS
+               ----------------------------------------------------------- */
+            html:not(.dark) input[type="text"],
+            html:not(.dark) input[type="date"],
+            html:not(.dark) input[type="file"],
+            html:not(.dark) textarea,
+            html:not(.dark) select {
+              background-color: #FFFFFF !important;
+              border-color: var(--border) !important;
+              color: var(--text-primary) !important;
+            }
+             
+            html:not(.dark) input[type="text"]::placeholder,
+            html:not(.dark) textarea::placeholder {
+              color: var(--text-muted) !important;
+            }
+             
+            html:not(.dark) input[type="text"]:hover,
+            html:not(.dark) textarea:hover,
+            html:not(.dark) select:hover {
+              border-color: var(--border-strong) !important;
+            }
+             
+            html:not(.dark) input[type="text"]:focus,
+            html:not(.dark) input[type="date"]:focus,
+            html:not(.dark) textarea:focus,
+            html:not(.dark) select:focus {
+              border-color: var(--primary) !important;
+              box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+              outline: none !important;
+            }
+             
+            /* Log form — trip binding select */
+            html:not(.dark) #log-trip-binding {
+              background-color: #FFFFFF !important;
+              border-color: var(--border) !important;
+              color: var(--text-primary) !important;
+            }
+             
+            /* Form labels */
+            html:not(.dark) label.block.text-xs {
+              color: var(--text-secondary) !important;
+            }
+             
+            /* File upload button */
+            html:not(.dark) input[type="file"]::file-selector-button {
+              background-color: #EFF6FF !important;
+              color: var(--primary) !important;
+              border: none !important;
+              border-radius: 0.75rem !important;
+              padding: 0.375rem 0.75rem !important;
+              font-size: 0.75rem !important;
+              font-weight: 500 !important;
+              cursor: pointer !important;
+              transition: background-color 0.15s !important;
+            }
+            html:not(.dark) input[type="file"]::file-selector-button:hover {
+              background-color: #DBEAFE !important;
+            }
+             
+            /* -----------------------------------------------------------
+               BUTTONS — PRIMARY, SECONDARY, DANGER
+               ----------------------------------------------------------- */
+             
+            /* Primary (orange brand) — keep brand color */
+            html:not(.dark) .bg-orange-600 {
+              background-color: #EA580C !important;
+            }
+            html:not(.dark) .hover\:bg-orange-500:hover {
+              background-color: #F97316 !important;
+            }
+             
+            /* "Tambah Aktivitas" dark button → secondary style */
+            html:not(.dark) .bg-slate-900.hover\:bg-slate-800 {
+              background-color: var(--primary) !important;
+              color: #FFFFFF !important;
+            }
+            html:not(.dark) .bg-slate-900.hover\:bg-slate-800:hover {
+              background-color: var(--primary-hover) !important;
+            }
+             
+            /* Secondary buttons — light gray */
+            html:not(.dark) .bg-slate-100,
+            html:not(.dark) .hover\:bg-slate-200 {
+              background-color: var(--bg-subtle) !important;
+              color: #334155 !important;
+            }
+            html:not(.dark) .hover\:bg-slate-200:hover {
+              background-color: var(--bg-hover) !important;
+            }
+             
+            /* Disabled stop button */
+            html:not(.dark) #btn-stop[disabled] {
+              background-color: var(--bg-subtle) !important;
+              color: var(--text-muted) !important;
+              border-color: var(--border) !important;
+            }
+             
+            /* PDF buttons */
+            html:not(.dark) button[onclick*="generatePDF('today')"] {
+              background-color: var(--bg-subtle) !important;
+              color: #334155 !important;
+              border: 1px solid var(--border) !important;
+            }
+            html:not(.dark) button[onclick*="generatePDF('today')"]:hover {
+              background-color: var(--bg-hover) !important;
+            }
+            html:not(.dark) button[onclick*="generatePDF('all')"] {
+              background-color: var(--primary) !important;
+              color: #FFFFFF !important;
+            }
+            html:not(.dark) button[onclick*="generatePDF('all')"]:hover {
+              background-color: var(--primary-hover) !important;
+            }
+             
+            /* Pagination buttons */
+            html:not(.dark) .flex.gap-1 button[onclick*="changePage"] {
+              background-color: var(--bg-subtle) !important;
+              color: var(--text-secondary) !important;
+              border: 1px solid var(--border) !important;
+            }
+            html:not(.dark) .flex.gap-1 button[onclick*="changePage"]:hover {
+              background-color: var(--bg-hover) !important;
+            }
+             
+            /* Settings backup buttons */
+            html:not(.dark) button[onclick="exportData()"],
+            html:not(.dark) label[for="import-file"],
+            html:not(.dark) label:has(#import-file) {
+              background-color: var(--bg-subtle) !important;
+              color: #334155 !important;
+              border-color: var(--border) !important;
+            }
+            html:not(.dark) button[onclick="exportData()"]:hover,
+            html:not(.dark) label:has(#import-file):hover {
+              background-color: var(--bg-hover) !important;
+            }
+             
+            /* Danger reset button */
+            html:not(.dark) button[onclick="triggerResetAll()"] {
+              background-color: #FEF2F2 !important;
+              color: var(--danger) !important;
+              border-color: #FECACA !important;
+            }
+            html:not(.dark) button[onclick="triggerResetAll()"]:hover {
+              background-color: #FEE2E2 !important;
+            }
+             
+            /* -----------------------------------------------------------
+               MAP LAYER TOGGLE BUTTONS
+               ----------------------------------------------------------- */
+            html:not(.dark) #layer-route {
+              background-color: var(--text-primary) !important;
+              color: #FFFFFF !important;
+            }
+            html:not(.dark) #layer-heatmap {
+              background-color: transparent !important;
+              color: var(--text-secondary) !important;
+            }
+            html:not(.dark) #layer-heatmap:hover {
+              background-color: var(--bg-subtle) !important;
+            }
+             
+            /* Map overlay badge */
+            html:not(.dark) .bg-white\/90 {
+              background-color: rgba(255, 255, 255, 0.95) !important;
+              border-color: var(--border) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               TABLE — HISTORY VIEW
+               ----------------------------------------------------------- */
+            html:not(.dark) table thead tr {
+              background-color: var(--bg-subtle) !important;
+              border-bottom-color: var(--border) !important;
+            }
+            html:not(.dark) table thead th {
+              color: var(--text-secondary) !important;
+            }
+            html:not(.dark) table tbody {
+              color: var(--text-primary) !important;
+            }
+            html:not(.dark) .divide-y.divide-slate-100 > * + * {
+              border-top-color: var(--border) !important;
+            }
+            html:not(.dark) .border-slate-100 {
+              border-color: var(--border) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               MODAL DIALOGS
+               ----------------------------------------------------------- */
+            html:not(.dark) #confirm-modal,
+            html:not(.dark) #edit-modal,
+            html:not(.dark) #preview-modal {
+              background-color: #FFFFFF !important;
+              border-color: var(--border) !important;
+              box-shadow: 0 20px 60px -10px rgba(15, 23, 42, 0.15), 0 0 0 1px var(--border) !important;
+            }
+             
+            html:not(.dark) #modal-title,
+            html:not(.dark) #edit-modal-title {
+              color: var(--text-primary) !important;
+            }
+             
+            html:not(.dark) #modal-desc,
+            html:not(.dark) #preview-img-desc {
+              color: var(--text-secondary) !important;
+            }
+             
+            /* Modal cancel buttons */
+            html:not(.dark) #confirm-modal button[onclick="closeModal()"],
+            html:not(.dark) #edit-modal button[onclick="closeModal()"] {
+              background-color: var(--bg-subtle) !important;
+              color: #334155 !important;
+            }
+             
+            /* Edit modal submit */
+            html:not(.dark) #edit-modal button[type="submit"] {
+              background-color: #EA580C !important;
+              color: #FFFFFF !important;
+            }
+             
+            /* Preview modal close btn */
+            html:not(.dark) #preview-modal button[onclick="closeModal()"] {
+              background-color: var(--bg-subtle) !important;
+              color: var(--text-primary) !important;
+            }
+             
+            /* Preview image bg */
+            html:not(.dark) #preview-img-src {
+              background-color: var(--bg-subtle) !important;
+            }
+             
+            /* Download button */
+            html:not(.dark) #preview-img-download {
+              background-color: var(--text-primary) !important;
+              color: #FFFFFF !important;
+            }
+             
+            /* Modal backdrop */
+            html:not(.dark) #modal-backdrop {
+              background-color: rgba(15, 23, 42, 0.35) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               TIMELINE
+               ----------------------------------------------------------- */
+            html:not(.dark) #timeline-container {
+              border-left-color: var(--border) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               TRACKING STATUS BADGE
+               ----------------------------------------------------------- */
+            html:not(.dark) #tracking-status-container {
+              background-color: #FFF7ED !important;
+              border-color: #FED7AA !important;
+              color: #C2410C !important;
+            }
+             
+            /* -----------------------------------------------------------
+               BOTTOM MOBILE NAV BAR
+               ----------------------------------------------------------- */
+            html:not(.dark) .fixed.bottom-0 {
+              background-color: rgba(255, 255, 255, 0.9) !important;
+              backdrop-filter: blur(12px) !important;
+              -webkit-backdrop-filter: blur(12px) !important;
+              border-top-color: var(--border) !important;
+            }
+            html:not(.dark) .fixed.bottom-0 button {
+              color: var(--text-secondary) !important;
+            }
+            html:not(.dark) .fixed.bottom-0 button:hover {
+              color: #EA580C !important;
+            }
+             
+            /* -----------------------------------------------------------
+               SETTINGS PAGE
+               ----------------------------------------------------------- */
+            html:not(.dark) #view-settings .bg-slate-50 {
+              background-color: var(--bg-subtle) !important;
+              border-color: var(--border) !important;
+            }
+            html:not(.dark) #store-bytes,
+            html:not(.dark) #store-records {
+              color: var(--text-primary) !important;
+            }
+            html:not(.dark) .text-rose-500 {
+              color: #DC2626 !important;
+            }
+             
+            /* -----------------------------------------------------------
+               CHART CARD FOOTER
+               ----------------------------------------------------------- */
+            html:not(.dark) .border-t.border-slate-100 {
+              border-top-color: var(--border) !important;
+            }
+            html:not(.dark) #last-update-time {
+              color: var(--text-primary) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               ICON COLOR SYSTEM (emoji labels — color via text-color
+               on containing elements where applicable)
+               ----------------------------------------------------------- */
+             
+            /* Stat card icon accent colors via adjacent label text-color */
+            /* 📍 Total Jarak */
+            html:not(.dark) p.text-xs:has(+ p > #dash-distance) {
+              color: #EF4444 !important;
+            }
+            /* 🚶 Total Trip */
+            html:not(.dark) p.text-xs:has(+ p > #dash-trips) {
+              color: #F59E0B !important;
+            }
+            /* ⏱️ Durasi */
+            html:not(.dark) p.text-xs:has(+ p > #dash-duration) {
+              color: #8B5CF6 !important;
+            }
+            /* 📝 Aktivitas */
+            html:not(.dark) p.text-xs:has(+ p > #dash-logs) {
+              color: #10B981 !important;
+            }
+             
+            /* -----------------------------------------------------------
+               REPLAY CONTROLS BAR
+               ----------------------------------------------------------- */
+            html:not(.dark) #replay-controls {
+              background-color: var(--bg-subtle) !important;
+              border: 1px solid var(--border) !important;
+            }
+            html:not(.dark) #replay-controls button:hover {
+              background-color: #FFFFFF !important;
+            }
+             
+            /* -----------------------------------------------------------
+               GLASS UTILITY CLASS — LIGHT OVERRIDE
+               ----------------------------------------------------------- */
+            html:not(.dark) .glass {
+              background: rgba(255, 255, 255, 0.85) !important;
+              backdrop-filter: blur(12px) !important;
+              -webkit-backdrop-filter: blur(12px) !important;
+            }
+             
+            /* -----------------------------------------------------------
+               SCROLLBAR — LIGHT THEME
+               ----------------------------------------------------------- */
+            html:not(.dark) ::-webkit-scrollbar-thumb {
+              background: #CBD5E1 !important;
+            }
+            html:not(.dark) ::-webkit-scrollbar-track {
+              background: transparent !important;
+            }
+             
+            /* -----------------------------------------------------------
+               TOAST NOTIFICATIONS — LIGHT OVERRIDE
+               ----------------------------------------------------------- */
+            html:not(.dark) .bg-slate-900.dark\:bg-slate-100 {
+              background-color: #0F172A !important;
+              color: #FFFFFF !important;
+            }
+             
+            /* -----------------------------------------------------------
+               MISC — PREVENT DARK COLORS LEAKING INTO LIGHT MODE
+               ----------------------------------------------------------- */
+             
+            /* Any dark background variant that might bleed */
+            html:not(.dark) [class*="dark:bg-slate-800"],
+            html:not(.dark) [class*="dark:bg-slate-900"],
+            html:not(.dark) [class*="dark:bg-slate-950"] {
+              /* These dark: prefixed classes are inert in light mode by design,
+                 but if JS dynamically adds non-prefixed versions, we neutralize them */
+            }
+             
+            /* Ensure bg-transparent inputs remain white in light mode */
+            html:not(.dark) .bg-transparent {
+              background-color: #FFFFFF !important;
+            }
+             
+            /* History table item type badges */
+            html:not(.dark) .bg-blue-100 { background-color: #DBEAFE !important; }
+            html:not(.dark) .text-blue-700 { color: #1D4ED8 !important; }
+            html:not(.dark) .bg-green-100 { background-color: #D1FAE5 !important; }
+            html:not(.dark) .text-green-700 { color: #047857 !important; }
+            html:not(.dark) .bg-rose-100 { background-color: #FEE2E2 !important; }
+            html:not(.dark) .text-rose-600 { color: #DC2626 !important; }
+             
+            /* -----------------------------------------------------------
+               MAPBOX / LEAFLET POPUP — LIGHT STYLE CONSISTENCY
+               ----------------------------------------------------------- */
+            html:not(.dark) .leaflet-popup-content-wrapper {
+              background-color: #FFFFFF !important;
+              color: var(--text-primary) !important;
+              border: 1px solid var(--border) !important;
+              box-shadow: var(--shadow-md) !important;
+              border-radius: 0.75rem !important;
+            }
+            html:not(.dark) .leaflet-popup-tip {
+              background-color: #FFFFFF !important;
+            }
         
         .dark {
             /* Dark Mode Premium Palette */
